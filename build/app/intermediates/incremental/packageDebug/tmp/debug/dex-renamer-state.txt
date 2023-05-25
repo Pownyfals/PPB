@@ -1,0 +1,4 @@
+#Fri May 12 18:04:32 WIB 2023
+base.0=/home/kevin/Documents/PPB/Tubes/e_reference_mobile/build/app/intermediates/dex/debug/mergeDexDebug/classes.dex
+path.0=classes.dex
+renamed.0=classes.dex
