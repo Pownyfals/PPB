@@ -1,0 +1,4 @@
+#Mon Jun 05 12:07:32 ICT 2023
+base.0=C\:\\Users\\Zacharia Bachtiar\\Desktop\\BangJek\\Tel-U\\Mata Kuliah Semester 6\\Pemrograman Perangkat Bergerak\\PPB\\build\\app\\intermediates\\dex\\debug\\mergeDexDebug\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex
