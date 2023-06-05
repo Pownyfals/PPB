@@ -1,8 +1,9 @@
-// ignore_for_file: library_private_types_in_public_api, deprecated_member_use, prefer_const_constructors, prefer_const_literals_to_create_immutables
+import 'dart:io';
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ReadPage extends StatefulWidget {
   @override
@@ -10,17 +11,34 @@ class ReadPage extends StatefulWidget {
 }
 
 class _ReadPageState extends State<ReadPage> {
-  late PDFViewController pdfViewController;
+  late DatabaseReference _dbRef;
+  String? filePath;
+  late String author = '';
+  late String publisher = '';
+  late String description = '';
+  late String title = '';
+  late String year = '';
+  late String citationText = "";
 
-  // void _launchWebsiteUrl() async {
-  //   if (await canLaunch(
-  //       "https://repository.dinus.ac.id/docs/ajar/Software_Engineering_-_Pressman.pdf")) {
-  //     await launch(
-  //         "https://repository.dinus.ac.id/docs/ajar/Software_Engineering_-_Pressman.pdf"); // Membuka link website
-  //   } else {
-  //     throw 'Tidak dapat membuka link: https://repository.dinus.ac.id/docs/ajar/Software_Engineering_-_Pressman.pdf';
-  //   }
-  // }
+  Future<void> fetchData() async {
+    late DatabaseReference _dbBook = FirebaseDatabase.instance
+        .reference()
+        .child('reference')
+        .child('books')
+        .child('book1');
+    DataSnapshot snapshot = (await _dbBook.once()).snapshot;
+    Map<dynamic, dynamic>? data = snapshot.value as Map<dynamic, dynamic>?;
+
+    if (data != null) {
+      setState(() {
+        title = data['title'] ?? '';
+        author = data['author'] ?? '';
+        description = data['description'] ?? '';
+        year = data['year'] ?? '';
+        publisher = data['publisher'] ?? '';
+      });
+    }
+  }
 
   Future<void> showCitateDialog() async {
     return showDialog<void>(
@@ -28,18 +46,68 @@ class _ReadPageState extends State<ReadPage> {
       barrierDismissible: true,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Silahkan copy sitasi dibawah'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: const <Widget>[
-                SelectableText(
-                  "Pressman, R. S. (2014). Software engineering: A practitioner's approach (8th ed.). McGraw-Hill.",
-                  textAlign: TextAlign.justify,
+          title: const Text('Silahkan pilih jenis sitasi'),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return SingleChildScrollView(
+                child: ListBody(
+                  children: <Widget>[
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Jenis Sitasi',
+                      ),
+                      value: 'APA',
+                      onChanged: (String? value) {
+                        setState(() {
+                          if (value == 'APA') {
+                            citationText =
+                                "$author, $title, $publisher, $year.";
+                          } else if (value == 'HARVARD') {
+                            citationText =
+                                "$author. $year, $title, $publisher.";
+                          } else if (value == 'IEEE') {
+                            citationText =
+                                "$author, $title, $publisher, $year.";
+                          }
+                        });
+                      },
+                      items: <String>['APA', 'HARVARD', 'IEEE']
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(height: 16.0),
+                    SelectableText(
+                      citationText,
+                      textAlign: TextAlign.justify,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
           actions: <Widget>[
+            GestureDetector(
+              child: const Text(
+                'Copy sitasi',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.orange,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: citationText));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Teks telah disalin!'),
+                  ),
+                );
+              },
+            ),
             TextButton(
               child: const Text('Kembali'),
               onPressed: () {
@@ -52,6 +120,79 @@ class _ReadPageState extends State<ReadPage> {
     );
   }
 
+  Future<void> downloadPDF() async {
+    Directory appDocDir = await getApplicationDocumentsDirectory();
+    print(appDocDir.path);
+    String fileName = '2.pdf';
+    String localFilePath =
+        '${appDocDir.path}/$fileName'; // Update the file path
+
+    if (await File(localFilePath).exists()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('File sudah diunduh sebelumnya.'),
+        ),
+      );
+    } else {
+      String url =
+          'https://repository.dinus.ac.id/docs/ajar/Software_Engineering_-_Pressman.pdf';
+      HttpClient httpClient = HttpClient();
+
+      try {
+        HttpClientRequest request = await httpClient.getUrl(Uri.parse(url));
+        HttpClientResponse response = await request.close();
+
+        if (response.statusCode == 200) {
+          File file = File(localFilePath);
+          await file.create(
+              recursive: true); // Create the file if it doesn't exist
+          await response.pipe(file.openWrite());
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('File berhasil diunduh.'),
+            ),
+          );
+
+          setState(() {
+            filePath = localFilePath;
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal mengunduh file.'),
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Terjadi kesalahan dalam mengunduh file.'),
+          ),
+        );
+      } finally {
+        httpClient.close();
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _dbRef = FirebaseDatabase.instance.reference().child('reference');
+
+    _dbRef.child('books').child('book1').set({
+      'title': 'Software Engineering : A Practitioner Approach',
+      'publisher': 'McGraw-Hill',
+      'author': 'Pressman',
+      'description':
+          'Presents an engineering approach for the analysis, design, and testing of web applications. This book provides information on software tools, specific work flow for specific kinds of projects, and information on various topics. It includes resources for both instructors and students such as checklists, 700 categorized web references, and more.',
+      'year': '2014',
+    });
+
+    fetchData();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,19 +203,26 @@ class _ReadPageState extends State<ReadPage> {
         ),
         title: const Text(
           'Detail Buku',
-          style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.orange,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.black,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            SizedBox(height: 16.0),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Image.network(
-                "https://m.media-amazon.com/images/W/IMAGERENDERING_521856-T1/images/I/61JuC+epPFL.jpg",
-                fit: BoxFit.contain,
+            SizedBox(height: 20.0),
+            Container(
+              height: 200,
+              width: 150,
+              margin: EdgeInsets.only(top: 12, right: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                image: DecorationImage(
+                  image: AssetImage('image/book.png'),
+                ),
               ),
             ),
             Padding(
@@ -84,93 +232,93 @@ class _ReadPageState extends State<ReadPage> {
                 children: [
                   const Text(
                     "Software Engineering : \nA Practitioner Approach",
-                    style:
-                        TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 24.0,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   SizedBox(height: 8.0),
                   Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                Text(
-                                  'Penulis  :',
-                                  style: TextStyle(fontSize: 16.0),
-                                ),
-                                SizedBox(width: 16.0),
-                                Text(
-                                  'Pressman',
-                                  style: TextStyle(fontSize: 16.0),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8.0),
                             Text(
-                              'Deskripsi  : Presents an engineering approach for the analysis, design, and testing of web applications. This book provides information on software tools, specific work flow for specific kinds of projects, and information on various topics. It includes resources for both instructors and students such as checklists, 700 categorized web references, and more.',
+                              'Penulis  :',
                               style: TextStyle(fontSize: 16.0),
-                              textAlign: TextAlign.justify,
-                            )
-                          ])),
+                            ),
+                            SizedBox(width: 16.0),
+                            Text(
+                              author,
+                              style: TextStyle(fontSize: 16.0),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              'Publisher  :',
+                              style: TextStyle(fontSize: 16.0),
+                            ),
+                            SizedBox(width: 16.0),
+                            Text(
+                              publisher,
+                              style: TextStyle(fontSize: 16.0),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              'Year  :',
+                              style: TextStyle(fontSize: 16.0),
+                            ),
+                            SizedBox(width: 16.0),
+                            Text(
+                              year,
+                              style: TextStyle(fontSize: 16.0),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8.0),
+                        Text(
+                          description,
+                          style: TextStyle(fontSize: 16.0),
+                          textAlign: TextAlign.justify,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
             Padding(
-                padding: const EdgeInsets.all(10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        primary: Colors.orange, // background
-                        onPrimary: Colors.black, // foreground
-                      ),
-                      onPressed: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => Scaffold(
-                              appBar: AppBar(
-                                title: const Text('PDF Viewer'),
-                                backgroundColor: Colors.black,
-                              ),
-                              body: PDFView(
-                                filePath:
-                                    'https://repository.dinus.ac.id/docs/ajar/Software_Engineering_-_Pressman.pdf',
-                                enableSwipe: true,
-                                swipeHorizontal: true,
-                                autoSpacing: false,
-                                pageSnap: false,
-                                onError: (e) {
-                                  print(e);
-                                },
-                                onRender: (pages) {
-                                  setState(() {});
-                                },
-                                onViewCreated: (PDFViewController vc) {
-                                  pdfViewController = vc;
-                                },
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      child: const Text('Read'),
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      primary: Colors.orange,
+                      onPrimary: Colors.black,
                     ),
-                    const SizedBox(width: 16.0),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        primary: Colors.orange, // background
-                        onPrimary: Colors.black, // foreground
-                      ),
-                      onPressed: () {
-                        showCitateDialog();
-                      },
-                      child: const Text('Citate'),
+                    onPressed: filePath != null ? null : downloadPDF,
+                    child: const Text('Download'),
+                  ),
+                  const SizedBox(width: 16.0),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      primary: Colors.orange,
+                      onPrimary: Colors.black,
                     ),
-                  ],
-                ))
+                    onPressed: showCitateDialog,
+                    child: const Text('Citate'),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

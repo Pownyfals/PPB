@@ -125,16 +125,17 @@
     <string name="common_signin_button_text">Sign in</string>
     <string name="common_signin_button_text_long">Sign in with Google</string>
     <string name="copy_toast_msg">Link copied to clipboard</string>
-    <string name="default_web_client_id" translatable="false">506561219923-88pk2s4eltt3fj74tk1tiv48a7tke2dn.apps.googleusercontent.com</string>
+    <string name="default_web_client_id" translatable="false">997382835970-0jhidfj0vkg3pdm8dd10itpg6251jjd3.apps.googleusercontent.com</string>
     <string name="fallback_menu_item_copy_link">Copy link</string>
     <string name="fallback_menu_item_open_in_browser">Open in browser</string>
     <string name="fallback_menu_item_share_link">Share link</string>
-    <string name="gcm_defaultSenderId" translatable="false">506561219923</string>
-    <string name="google_api_key" translatable="false">AIzaSyD6L36GkHjMkJ63RjsuUpmwLJY8eSLXxjI</string>
-    <string name="google_app_id" translatable="false">1:506561219923:android:df2f83ac3c44a05c4025a6</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyD6L36GkHjMkJ63RjsuUpmwLJY8eSLXxjI</string>
-    <string name="google_storage_bucket" translatable="false">fir-auth-a9b52.appspot.com</string>
-    <string name="project_id" translatable="false">fir-auth-a9b52</string>
+    <string name="firebase_database_url" translatable="false">https://e-reference-3e8c3-default-rtdb.asia-southeast1.firebasedatabase.app</string>
+    <string name="gcm_defaultSenderId" translatable="false">997382835970</string>
+    <string name="google_api_key" translatable="false">AIzaSyD1AI4gOuF2hLI5zu6ylyOm53k-IjdDUds</string>
+    <string name="google_app_id" translatable="false">1:997382835970:android:29bf7f836a394fd4effc1b</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyD1AI4gOuF2hLI5zu6ylyOm53k-IjdDUds</string>
+    <string name="google_storage_bucket" translatable="false">e-reference-3e8c3.appspot.com</string>
+    <string name="project_id" translatable="false">e-reference-3e8c3</string>
     <string name="status_bar_notification_info_overflow">999+</string>
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         
