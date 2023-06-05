@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
-import 'login_page.dart';
-import 'upload.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
 import 'auth.dart';
+import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -19,14 +19,13 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _controllerEmail = TextEditingController();
   final TextEditingController _controllerPassword = TextEditingController();
 
-  Future<void> createUserWithEmailAndPassword() async{  
-    try{
+  Future<void> createUserWithEmailAndPassword() async {
+    try {
       await Auth().createUserWithEmailAndPassword(
         email: _controllerEmail.text,
         password: _controllerPassword.text,
       );
-    } on FirebaseAuthException catch(e) {}
-  
+    } on FirebaseAuthException catch (e) {}
   }
 
   List<Map> dataUser = [];
